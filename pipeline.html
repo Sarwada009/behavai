@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>CareWatch — AI Pipeline</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #ffffff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 40px;
+    width: 780px;
+  }
+
+  h1 {
+    color: #1a2a4a;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-bottom: 28px;
+    text-transform: uppercase;
+  }
+
+  /* ── FLOW CONTAINER ── */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+  }
+
+  /* ── NODE ── */
+  .node {
+    border-radius: 8px;
+    padding: 8px 18px;
+    text-align: center;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    min-width: 180px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  .node .step-num {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 2px;
+  }
+  .node .label {
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .node .tech {
+    font-size: 9px;
+    font-weight: 600;
+    margin-top: 2px;
+    opacity: 0.75;
+  }
+
+  /* node colours */
+  .n-grey   { background: #ffffff; color: #1a2a4a; border: 2px solid #90a4ae; }
+  .n-blue   { background: #ffffff; color: #1a2a4a; border: 2px solid #90a4ae; }
+  .n-orange { background: #ffffff; color: #1a2a4a; border: 2px solid #90a4ae; }
+  .n-green  { background: #ffffff; color: #1a2a4a; border: 2px solid #90a4ae; }
+  .n-dark   { background: #ffffff; color: #1a2a4a; border: 2px solid #90a4ae; }
+  .n-red    { background: #ffffff; color: #1a2a4a; border: 2px solid #90a4ae; }
+  .n-purple { background: #ffffff; color: #1a2a4a; border: 2px solid #90a4ae; }
+
+  /* ── ARROW ── */
+  .arrow {
+    width: 2px;
+    height: 14px;
+    background: #b0bec5;
+    position: relative;
+    margin: 0 auto;
+  }
+  .arrow::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 7px solid #b0bec5;
+  }
+  .arrow-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: #90a4ae;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    margin: 2px 0;
+  }
+
+  /* ── PARALLEL ROW ── */
+  .parallel {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    width: 100%;
+  }
+  .parallel-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .parallel-node {
+    border-radius: 8px;
+    padding: 8px 12px;
+    text-align: center;
+    width: 100%;
+    background: #ffffff;
+    border: 2px solid #90a4ae;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .parallel-node .step-num {
+    font-size: 8px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase;
+    opacity: 0.7; margin-bottom: 2px;
+  }
+  .parallel-node .label {
+    font-size: 13px; font-weight: 800;
+  }
+  .parallel-node .tech {
+    font-size: 9px; font-weight: 600;
+    margin-top: 2px; opacity: 0.75;
+  }
+  .parallel-join {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    position: relative;
+    padding-top: 14px;
+  }
+  .parallel-join::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 25%; right: 25%;
+    height: 2px;
+    background: #b0bec5;
+  }
+  .parallel-join::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 2px; height: 14px;
+    background: #b0bec5;
+  }
+
+  /* ── FORMULA BOX ── */
+  .formula-box {
+    background: #f0f4f9;
+    border: 2px solid #4A90D9;
+    border-radius: 8px;
+    padding: 10px 16px;
+    text-align: center;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .formula-box .f-title {
+    font-size: 9px; font-weight: 800;
+    color: #4A90D9; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .formula-box .f-eq {
+    font-size: 14px; font-weight: 800; color: #1a2a4a;
+    margin-bottom: 8px;
+  }
+  .formula-box .f-eq .var { color: #4A90D9; }
+  .mult-row {
+    display: inline-flex; align-items: center;
+    gap: 4px; padding: 3px 10px;
+    border-radius: 6px; margin: 2px;
+    font-size: 11px; font-weight: 700;
+  }
+  .m-red   { background: #ffffff; color: #1a2a4a; border:1px solid #90a4ae; }
+  .m-white { background: #ffffff; color: #1a2a4a; border:1px solid #90a4ae; }
+  .m-green { background: #ffffff; color: #1a2a4a; border:1px solid #90a4ae; }
+
+  /* ── THRESHOLD BAR ── */
+  .threshold-box {
+    background: #f0f4f9;
+    border: 2px solid #ccd8e8;
+    border-radius: 8px;
+    padding: 10px 16px;
+    width: 100%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .threshold-box .t-title {
+    font-size: 9px; font-weight: 800;
+    color: #4A90D9; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 7px;
+    text-align: center;
+  }
+  .bar {
+    height: 22px;
+    border-radius: 6px;
+    background: linear-gradient(to right,
+      #4caf50 0%, #4caf50 40%,
+      #f9a825 40%, #f9a825 60%,
+      #e65100 60%, #e65100 80%,
+      #c62828 80%, #c62828 100%);
+    position: relative;
+    margin-bottom: 6px;
+  }
+  .bar-text {
+    position: absolute; top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px; font-weight: 800; color: #fff;
+  }
+  .ticks {
+    display: flex; justify-content: space-between;
+    font-size: 10px; font-weight: 700; color: #607d8b;
+  }
+
+  /* ── OUTPUT ROW ── */
+  .output-row {
+    display: flex; gap: 12px; width: 100%;
+  }
+  .out-node {
+    flex: 1; border-radius: 8px;
+    padding: 8px 10px; text-align: center;
+    font-size: 12px; font-weight: 800;
+    background: #ffffff;
+    border: 2px solid #90a4ae;
+    color: #1a2a4a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .out-node .tech {
+    font-size: 9px; font-weight: 600;
+    margin-top: 2px; opacity: 0.75;
+  }
+</style>
+</head>
+<body>
+
+<h1>Core AI Pipeline</h1>
+
+<div class="flow">
+
+  <!-- INPUT -->
+  <div class="node n-grey">
+    <div class="step-num">Step 1</div>
+    <div class="label">Camera Frame Input</div>
+    <div class="tech">JPEG · Every 3 seconds</div>
+  </div>
+
+  <div class="arrow"></div>
+
+  <!-- FACE RECOGNITION -->
+  <div class="node n-blue" style="min-width:320px">
+    <div class="step-num">Step 2</div>
+    <div class="label">Face Recognition</div>
+    <div class="tech">InsightFace buffalo_sc · ONNX</div>
+  </div>
+
+  <div class="arrow"></div>
+
+  <!-- PARALLEL -->
+  <div class="parallel">
+    <div class="parallel-col">
+      <div class="parallel-node n-orange">
+        <div class="step-num">Step 3A</div>
+        <div class="label">Emotion Detection</div>
+        <div class="tech">hsemotion · enet_b0 · ONNX</div>
+      </div>
+    </div>
+    <div class="parallel-col">
+      <div class="parallel-node n-green">
+        <div class="step-num">Step 3B</div>
+        <div class="label">Motion Scoring</div>
+        <div class="tech">OpenCV Frame Differencing</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOIN ARROWS + COMBINE -->
+  <div class="parallel-join"></div>
+
+  <!-- FORMULA -->
+  <div class="formula-box">
+    <div class="f-title">Step 4 — Score Calculation</div>
+    <div class="f-eq">Final Score = <span class="var">Motion</span> x Emotion Multiplier</div>
+    <div>
+      <span class="mult-row m-red">Anger / Fear   x 1.2</span>
+      <span class="mult-row m-white">Neutral   x 1.0</span>
+      <span class="mult-row m-green">Happiness   x 0.3</span>
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+
+  <!-- THRESHOLD -->
+  <div class="threshold-box">
+    <div class="t-title">Step 5 — Agitation Threshold</div>
+    <div class="bar">
+      <div class="bar-text" style="left:8px">Safe</div>
+      <div class="bar-text" style="left:41%">Agitated</div>
+      <div class="bar-text" style="left:62%">Warning</div>
+      <div class="bar-text" style="left:82%">Outburst</div>
+    </div>
+    <div class="ticks">
+      <span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span>
+    </div>
+  </div>
+
+  <div class="arrow"></div>
+
+  <!-- OUTPUT -->
+  <div class="output-row">
+    <div class="out-node n-dark">
+      WebSocket Alert
+      <div class="tech">Live Dashboard</div>
+    </div>
+    <div class="out-node n-red">
+      Push Notification
+      <div class="tech">Expo Push API</div>
+    </div>
+    <div class="out-node n-purple">
+      Incident Logged
+      <div class="tech">PostgreSQL</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CareWatch — System Architecture</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f0f4f9;
+    padding: 24px 32px;
+    width: 960px;
+  }
+  h1 {
+    text-align: center;
+    color: #1a2a4a;
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 24px;
+  }
+
+  /* LAYER */
+  .layer { display: flex; align-items: stretch; gap: 10px; margin-bottom: 0; }
+  .layer-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    border-radius: 6px;
+    padding: 6px 0;
+  }
+  .lbl-blue   { background: #4A90D9; }
+  .lbl-purple { background: #7c3aed; }
+  .lbl-green  { background: #34a853; }
+
+  .layer-content { flex: 1; display: flex; gap: 10px; }
+
+  /* ARROWS */
+  .arrow-row {
+    display: flex; align-items: center;
+    gap: 10px; height: 36px; padding-left: 32px;
+  }
+  .arrow-col {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; gap: 1px;
+    color: #4A90D9; font-size: 10px; font-weight: 700;
+  }
+
+  /* BOX */
+  .box {
+    border-radius: 10px;
+    padding: 14px 10px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  }
+  .box .icon  { font-size: 26px; }
+  .box .title { font-size: 15px; font-weight: 800; text-align: center; }
+  .box .tag   {
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+  .blue   { background: #ddeeff; border: 2.5px solid #4A90D9; }
+  .blue .title { color: #0d3b6e; }
+  .blue .tag   { background: #4A90D9; color: #fff; }
+
+  .dark   { background: #1a2a4a; border: 2.5px solid #0d1b2e; }
+  .dark .title { color: #ffffff; font-size: 16px; }
+  .dark .tag   { background: #4A90D9; color: #fff; }
+
+  .green  { background: #d6f5e3; border: 2.5px solid #34a853; }
+  .green .title { color: #145a2e; }
+  .green .tag   { background: #34a853; color: #fff; }
+
+  .red    { background: #fde8e8; border: 2.5px solid #c62828; }
+  .red .title { color: #7b0000; }
+  .red .tag   { background: #c62828; color: #fff; }
+
+  /* PIPELINE */
+  .pipeline {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 2.5px solid #ccd8e8;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .pipeline h3 {
+    font-size: 12px; font-weight: 800;
+    color: #1a2a4a; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .pipeline-steps { display: flex; align-items: center; gap: 6px; }
+  .step {
+    flex: 1; border-radius: 8px;
+    padding: 10px 4px; text-align: center;
+  }
+  .step .s-icon  { font-size: 20px; }
+  .step .s-title { font-size: 12px; font-weight: 800; color: #1a2a4a; margin-top: 4px; }
+  .step-arrow    { font-size: 20px; color: #4A90D9; flex-shrink: 0; font-weight: 900; }
+
+  .s-blue   { background: #ddeeff; }
+  .s-orange { background: #fff0e0; }
+  .s-green  { background: #d6f5e3; }
+  .s-red    { background: #fde8e8; }
+
+  .formula {
+    background: #1a2a4a; border-radius: 8px;
+    padding: 9px 14px; text-align: center;
+    color: #fff; font-size: 13px; font-weight: 700;
+  }
+  .formula .angry { color: #ff8a80; }
+  .formula .happy { color: #69f0ae; }
+  .formula .var   { color: #82b1ff; }
+
+  /* DB */
+  .db-wrap {
+    flex: 2; background: #d6f5e3;
+    border-radius: 10px; padding: 14px 16px;
+    border: 2.5px solid #34a853;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .db-wrap .db-title {
+    font-size: 14px; font-weight: 800; color: #145a2e; margin-bottom: 10px;
+  }
+  .db-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .db-table {
+    background: #fff; border-radius: 7px;
+    padding: 9px 12px;
+    border: 1.5px solid #a8d5b5;
+    font-size: 12px; font-weight: 700; color: #1a2a4a;
+  }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 18px; background: #1a2a4a;
+    border-radius: 10px; padding: 14px 20px;
+    display: flex; justify-content: space-around; align-items: center;
+  }
+  .ft-col { text-align: center; }
+  .ft-label {
+    font-size: 9px; color: #82b1ff;
+    font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 4px;
+  }
+  .ft-val { font-size: 11px; color: #e0ecfa; font-weight: 600; line-height: 1.6; }
+  .ft-div { width: 1px; background: #2a3a5a; align-self: stretch; }
+</style>
+</head>
+<body>
+
+<h1>🏥 CareWatch — System Architecture</h1>
+
+<!-- CLIENT -->
+<div class="layer">
+  <div class="layer-label lbl-blue">Clients</div>
+  <div class="layer-content">
+    <div class="box blue">
+      <div class="icon">🖥️</div>
+      <div class="title">Web Dashboard</div>
+      <div class="tag">React + Vite</div>
+    </div>
+    <div class="box blue">
+      <div class="icon">📱</div>
+      <div class="title">Mobile App</div>
+      <div class="tag">React Native + Expo</div>
+    </div>
+    <div class="box blue">
+      <div class="icon">📷</div>
+      <div class="title">IP Camera</div>
+      <div class="tag">RTSP Stream</div>
+    </div>
+  </div>
+</div>
+
+<!-- ARROWS -->
+<div class="arrow-row">
+  <div class="arrow-col">
+    <svg width="2" height="14"><line x1="1" y1="0" x2="1" y2="14" stroke="#4A90D9" stroke-width="2" stroke-dasharray="4"/></svg>
+    <svg width="12" height="7"><polygon points="6,7 0,0 12,0" fill="#4A90D9"/></svg>
+    <span>REST + WebSocket</span>
+  </div>
+  <div class="arrow-col">
+    <svg width="2" height="14"><line x1="1" y1="0" x2="1" y2="14" stroke="#4A90D9" stroke-width="2" stroke-dasharray="4"/></svg>
+    <svg width="12" height="7"><polygon points="6,7 0,0 12,0" fill="#4A90D9"/></svg>
+    <span>REST + Push Token</span>
+  </div>
+  <div class="arrow-col">
+    <svg width="2" height="14"><line x1="1" y1="0" x2="1" y2="14" stroke="#4A90D9" stroke-width="2" stroke-dasharray="4"/></svg>
+    <svg width="12" height="7"><polygon points="6,7 0,0 12,0" fill="#4A90D9"/></svg>
+    <span>RTSP Feed</span>
+  </div>
+</div>
+
+<!-- BACKEND -->
+<div class="layer">
+  <div class="layer-label lbl-purple">Backend</div>
+  <div class="layer-content">
+    <div class="box dark" style="flex:1">
+      <div class="icon">⚡</div>
+      <div class="title">FastAPI Backend</div>
+      <div class="tag">Python 3.11 · Port 8000</div>
+    </div>
+    <div class="pipeline" style="flex:2">
+      <h3>🤖 AI Analysis Pipeline</h3>
+      <div class="pipeline-steps">
+        <div class="step s-blue">
+          <div class="s-icon">👤</div>
+          <div class="s-title">Face Recognition</div>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step s-orange">
+          <div class="s-icon">😠</div>
+          <div class="s-title">Emotion Detection</div>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step s-green">
+          <div class="s-icon">🏃</div>
+          <div class="s-title">Motion Scoring</div>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step s-red">
+          <div class="s-icon">📊</div>
+          <div class="s-title">Agitation Tracker</div>
+        </div>
+      </div>
+      <div class="formula">
+        Alert ONLY if: (Anger OR Fear) AND Motion ≥ 50 &nbsp;|&nbsp;
+        <span class="angry">😠 Anger = 1.2×</span> &nbsp;
+        😐 Neutral = blocked &nbsp;
+        <span class="happy">😊 Happy = blocked</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ARROWS -->
+<div class="arrow-row" style="justify-content:space-between; padding: 0 32px">
+  <div class="arrow-col" style="max-width:160px">
+    <svg width="2" height="14"><line x1="1" y1="0" x2="1" y2="14" stroke="#34a853" stroke-width="2" stroke-dasharray="4"/></svg>
+    <svg width="12" height="7"><polygon points="6,7 0,0 12,0" fill="#34a853"/></svg>
+    <span style="color:#34a853">Read / Write</span>
+  </div>
+  <div class="arrow-col" style="max-width:160px">
+    <svg width="2" height="14"><line x1="1" y1="0" x2="1" y2="14" stroke="#c62828" stroke-width="2" stroke-dasharray="4"/></svg>
+    <svg width="12" height="7"><polygon points="6,7 0,0 12,0" fill="#c62828"/></svg>
+    <span style="color:#c62828">Alert Triggered</span>
+  </div>
+</div>
+
+<!-- DATA + ALERTS -->
+<div class="layer">
+  <div class="layer-label lbl-green">Data</div>
+  <div class="layer-content">
+    <div class="db-wrap">
+      <div class="db-title">🗄️ PostgreSQL 16</div>
+      <div class="db-grid">
+        <div class="db-table">👤 users</div>
+        <div class="db-table">🧑‍⚕️ patients</div>
+        <div class="db-table">📋 health_history</div>
+        <div class="db-table">📍 patient_presence</div>
+        <div class="db-table">📈 agitation_readings</div>
+        <div class="db-table">🔔 device_tokens</div>
+      </div>
+    </div>
+    <div style="flex:1; display:flex; flex-direction:column; gap:10px;">
+      <div class="box red" style="flex:1">
+        <div class="icon">🚨</div>
+        <div class="title">Alerts</div>
+        <div class="tag">WebSocket → Dashboard</div>
+        <div class="tag" style="margin-top:0">Expo Push → Mobile</div>
+      </div>
+      <div class="box green" style="flex:0; padding:12px">
+        <div class="icon" style="font-size:18px">📁</div>
+        <div class="title" style="font-size:13px">File Storage</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div class="ft-col">
+    <div class="ft-label">Frontend</div>
+    <div class="ft-val">React · Vite<br>TypeScript</div>
+  </div>
+  <div class="ft-div"></div>
+  <div class="ft-col">
+    <div class="ft-label">Mobile</div>
+    <div class="ft-val">React Native<br>Expo SDK 54</div>
+  </div>
+  <div class="ft-div"></div>
+  <div class="ft-col">
+    <div class="ft-label">Backend</div>
+    <div class="ft-val">FastAPI<br>Python 3.11</div>
+  </div>
+  <div class="ft-div"></div>
+  <div class="ft-col">
+    <div class="ft-label">AI / ML</div>
+    <div class="ft-val">InsightFace · hsemotion<br>OpenCV · ONNX</div>
+  </div>
+  <div class="ft-div"></div>
+  <div class="ft-col">
+    <div class="ft-label">Database</div>
+    <div class="ft-val">PostgreSQL 16<br>JWT · bcrypt</div>
+  </div>
+  <div class="ft-div"></div>
+  <div class="ft-col">
+    <div class="ft-label">Notifications</div>
+    <div class="ft-val">Expo Push API<br>WebSocket</div>
+  </div>
+</div>
+
+</body>
+</html>

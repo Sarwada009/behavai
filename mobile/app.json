@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "CareWatch",
+    "slug": "carewatch",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#4A90D9"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "CareWatch uses the camera to identify patients and monitor behaviour.",
+        "NSMicrophoneUsageDescription": "Required by the camera API."
+      }
+    },
+    "android": {
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "CareWatch uses the camera to identify patients and monitor behaviour."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#4A90D9"
+        }
+      ],
+      "expo-secure-store"
+    ]
+  }
+}
