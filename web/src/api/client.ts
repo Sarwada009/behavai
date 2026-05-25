@@ -1,6 +1,9 @@
 import axios from "axios";
 
-export const API_BASE = "http://localhost:8000";
+// Use deployed backend in production, localhost in development
+export const API_BASE = import.meta.env.PROD
+  ? "https://carewatch.fly.dev"
+  : "http://localhost:8000";
 
 const client = axios.create({ baseURL: API_BASE });
 
