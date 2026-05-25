@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
-import { camerasApi, Camera } from "../api/cameras";
+import { camerasApi } from "../api/cameras";
 import { usePresenceStore } from "../store/presenceStore";
 
 export function CamerasPage() {
