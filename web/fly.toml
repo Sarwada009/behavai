@@ -7,11 +7,7 @@ app = 'behavai-web'
 primary_region = 'syd'
 
 [build]
-  builder = "heroku/buildpacks:20"
-  buildpacks = ["heroku/nodejs"]
-
-[build.args]
-  NODE_ENV = "production"
+  dockerfile = "Dockerfile"
 
 [http_service]
   internal_port = 8080
