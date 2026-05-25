@@ -38,6 +38,16 @@ app.include_router(stream.router)
 app.include_router(ws.router)
 
 
+@app.get("/")
+def root():
+    """Health check endpoint"""
+    return {
+        "message": "BehavAI CareWatch API is running",
+        "version": "2.0.0",
+        "status": "healthy"
+    }
+
+
 @app.on_event("startup")
 def on_startup():
     db = SessionLocal()
