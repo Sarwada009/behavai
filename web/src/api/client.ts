@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Use deployed backend in production, localhost in development
-const API_BASE_PROD = "https://carewatch.fly.dev";
+const API_BASE_PROD = "https://behavai-production.up.railway.app";
 const API_BASE_DEV = "http://localhost:8000";
 
 export const API_BASE = (import.meta.env.PROD ?? false) ? API_BASE_PROD : API_BASE_DEV;
