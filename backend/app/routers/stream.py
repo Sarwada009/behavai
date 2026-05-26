@@ -35,14 +35,15 @@ from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
-# Try to load emotion detection, but make it optional
+# Fallback emotion detection
+def _fallback_emotion(frame):
+    return (1.0, "Neutral")
+
+# Try to load emotion detection
 try:
     from app.services.emotion_analyzer import get_emotion_multiplier
-    EMOTION_DETECTION_AVAILABLE = True
-except Exception as e:
-    logger.warning("Emotion detection unavailable: %s", str(e))
-    EMOTION_DETECTION_AVAILABLE = False
-    def get_emotion_multiplier(frame): return (1.0, "Neutral")
+except:
+    get_emotion_multiplier = _fallback_emotion
 router = APIRouter(prefix="/stream", tags=["stream"])
 
 # One thread for CPU-bound ML work per concurrent user
