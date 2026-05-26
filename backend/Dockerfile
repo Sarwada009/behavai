@@ -1,8 +1,8 @@
-﻿FROM python:3.11-slim
+﻿FROM python:3.11-slim-bullseye
 
 WORKDIR /app
 
-# Install system dependencies (including graphics libraries for OpenCV)
+# Install system dependencies for OpenCV and numerical computing
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libssl-dev \
@@ -12,10 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     liblapack3 \
     libsm6 \
     libxext6 \
-    libxrender-dev \
-    libgl1-mesa-glx \
+    libxrender1 \
+    libgl1 \
+    libglvnd0 \
     libglib2.0-0 \
-    libdbus-1-3 \
+    libx11-6 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
