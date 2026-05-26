@@ -272,7 +272,7 @@ const styles: Record<string, React.CSSProperties> = {
     width: 240,
     outline: "none",
   },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 },
   tile: {
     background: "#fff",
     borderRadius: 12,

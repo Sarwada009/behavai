@@ -111,18 +111,19 @@ export default function App() {
 
 const nav: Record<string, React.CSSProperties> = {
   bar: {
-    background: "#4A90D9", padding: "0 32px", height: 56,
+    background: "#4A90D9", padding: "0 16px", height: 56,
     display: "flex", alignItems: "center", justifyContent: "space-between",
+    flexWrap: "wrap",
   },
-  logo: { color: "#fff", fontWeight: 800, fontSize: 20, textDecoration: "none" },
-  links: { display: "flex", gap: 8 },
-  link: { color: "rgba(255,255,255,0.75)", textDecoration: "none", padding: "6px 14px", borderRadius: 6, fontSize: 14, fontWeight: 600 },
+  logo: { color: "#fff", fontWeight: 800, fontSize: 18, textDecoration: "none" },
+  links: { display: "flex", gap: 4, flexWrap: "wrap" },
+  link: { color: "rgba(255,255,255,0.75)", textDecoration: "none", padding: "6px 10px", borderRadius: 6, fontSize: 12, fontWeight: 600 },
   linkActive: { background: "rgba(255,255,255,0.2)", color: "#fff" },
-  right: { display: "flex", alignItems: "center", gap: 12 },
+  right: { display: "flex", alignItems: "center", gap: 8 },
   dot: { width: 10, height: 10, borderRadius: 5, display: "inline-block" },
-  userName: { color: "rgba(255,255,255,0.85)", fontSize: 14 },
+  userName: { color: "rgba(255,255,255,0.85)", fontSize: 12 },
   logoutBtn: {
     background: "rgba(255,255,255,0.2)", border: "none", color: "#fff",
-    borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontSize: 14,
+    borderRadius: 6, padding: "6px 12px", cursor: "pointer", fontSize: 12,
   },
 };

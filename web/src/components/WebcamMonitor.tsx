@@ -260,9 +260,9 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "8px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer",
   },
   error: { color: "#c62828", padding: "8px 20px", fontSize: 14 },
-  body:  { display: "flex", gap: 0 },
+  body:  { display: "flex", flexDirection: "column", gap: 0 },
   videoWrap: {
-    width: 320, height: 240, background: "#111", flexShrink: 0,
+    width: "100%", maxWidth: 400, height: 300, background: "#111", flexShrink: 0,
     position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
   },
   video:       { width: "100%", height: "100%", objectFit: "cover" },
