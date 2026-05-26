@@ -304,3 +304,69 @@ async def _handle_alert(result: FrameResult, triggered_by_id: str):
         db.rollback()
     finally:
         db.close()
+
+
+# ---------------------------------------------------------------------------
+# Debug endpoint: test emotion detection
+# ---------------------------------------------------------------------------
+
+class EmotionTestResult(BaseModel):
+    emotion: Optional[str]
+    multiplier: float
+    all_scores: Optional[dict] = None
+
+
+@router.post("/test-emotion", response_model=EmotionTestResult)
+async def test_emotion(
+    file: UploadFile = File(...),
+    _: User = Depends(get_current_user),
+):
+    """Test endpoint to debug emotion detection on a single frame."""
+    raw = await file.read()
+    nparr = np.frombuffer(raw, np.uint8)
+    frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    if frame is None:
+        return EmotionTestResult(emotion=None, multiplier=1.0)
+
+    try:
+        # Test emotion detection
+        import asyncio
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            _executor, _test_emotion_sync, frame
+        )
+        return result
+    except Exception as e:
+        logger.exception("Emotion test failed: %s", str(e))
+        return EmotionTestResult(emotion="Error", multiplier=1.0)
+
+
+def _test_emotion_sync(frame: np.ndarray) -> EmotionTestResult:
+    """Synchronous emotion test."""
+    try:
+        multiplier, emotion = get_emotion_multiplier(frame)
+        logger.info(f"Test emotion result: {emotion} (multiplier: {multiplier})")
+
+        # Try to get all scores for debugging
+        all_scores = None
+        try:
+            from app.services.emotion_analyzer import _get_pipeline
+            pipeline = _get_pipeline()
+            if pipeline:
+                from PIL import Image
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                pil_image = Image.fromarray(frame_rgb)
+                results = pipeline(pil_image)
+                all_scores = {r["label"]: r["score"] for r in results}
+        except Exception:
+            pass
+
+        return EmotionTestResult(
+            emotion=emotion,
+            multiplier=multiplier,
+            all_scores=all_scores
+        )
+    except Exception as e:
+        logger.exception("Emotion test sync failed")
+        return EmotionTestResult(emotion="Error", multiplier=1.0)
