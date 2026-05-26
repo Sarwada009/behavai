@@ -189,16 +189,7 @@ export function WebcamMonitor() {
                 <div style={styles.infoBlock}>
                   <Label>Emotion</Label>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <Value>
-                      {result.emotion === "Anger"     ? "😠" :
-                       result.emotion === "Fear"      ? "😨" :
-                       result.emotion === "Happiness" ? "😊" :
-                       result.emotion === "Surprise"  ? "😲" :
-                       result.emotion === "Sadness"   ? "😢" :
-                       result.emotion === "Disgust"   ? "🤢" :
-                       result.emotion === "Contempt"  ? "😤" : "😐"}{" "}
-                      {result.emotion}
-                    </Value>
+                    <Value>{result.emotion}</Value>
                     <span style={{
                       fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
                       background: result.emotion_multiplier >= 1.3 ? "#fde8e8" :

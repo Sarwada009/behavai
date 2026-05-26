@@ -27,7 +27,7 @@ function NavBar() {
 
   return (
     <nav style={nav.bar}>
-      <Link to="/" style={nav.logo}>CareWatch</Link>
+      <Link to="/" style={nav.logo}>BehavAI</Link>
       <div style={nav.links}>
         <NavLink to="/" end style={({ isActive }) => ({ ...nav.link, ...(isActive ? nav.linkActive : {}) })}>
           Dashboard

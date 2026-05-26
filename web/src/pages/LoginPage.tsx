@@ -27,7 +27,7 @@ export function LoginPage() {
   return (
     <div style={styles.page}>
       <form onSubmit={handleSubmit} style={styles.card}>
-        <h1 style={styles.logo}>CareWatch</h1>
+        <h1 style={styles.logo}>BehavAI</h1>
         <p style={styles.sub}>Aged Care Behaviour Monitoring</p>
 
         {error && <p style={styles.error}>{error}</p>}
