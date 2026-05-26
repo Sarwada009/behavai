@@ -30,9 +30,17 @@ from app.models.patient import Patient
 from app.models.patient_presence import PatientPresence
 from app.services.agitation_tracker import agitation_tracker
 from app.services.behavior_analyzer import BehaviorAnalyzer
-from app.services.emotion_analyzer import get_emotion_multiplier
 from app.services.face_service import find_match, get_face_data
 from app.models.user import User
+
+# Try to load emotion detection, but make it optional
+try:
+    from app.services.emotion_analyzer import get_emotion_multiplier
+    EMOTION_DETECTION_AVAILABLE = True
+except Exception as e:
+    logger.warning("Emotion detection unavailable: %s", str(e))
+    EMOTION_DETECTION_AVAILABLE = False
+    def get_emotion_multiplier(frame): return (1.0, "Neutral")
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/stream", tags=["stream"])
