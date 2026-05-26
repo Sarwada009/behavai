@@ -33,6 +33,8 @@ from app.services.behavior_analyzer import BehaviorAnalyzer
 from app.services.face_service import find_match, get_face_data
 from app.models.user import User
 
+logger = logging.getLogger(__name__)
+
 # Try to load emotion detection, but make it optional
 try:
     from app.services.emotion_analyzer_custom import get_emotion_multiplier
@@ -41,8 +43,6 @@ except Exception as e:
     logger.warning("Emotion detection unavailable: %s", str(e))
     EMOTION_DETECTION_AVAILABLE = False
     def get_emotion_multiplier(frame): return (1.0, "Neutral")
-
-logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/stream", tags=["stream"])
 
 # One thread for CPU-bound ML work per concurrent user

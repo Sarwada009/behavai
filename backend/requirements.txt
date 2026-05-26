@@ -23,6 +23,8 @@ scipy==1.11.4
 # Phase 3: Emotion & Behavior Detection
 httpx==0.27.0
 deepface==0.0.75
+torch==2.1.0
+torchvision==0.16.0
 
 # Phase 4: Reports
 fpdf2==2.7.9
