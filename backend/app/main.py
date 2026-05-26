@@ -43,7 +43,7 @@ def root():
     """Health check endpoint"""
     return {
         "message": "BehavAI CareWatch API is running",
-        "version": "2.0.0",
+        "version": "2.0.1",
         "status": "healthy"
     }
 
