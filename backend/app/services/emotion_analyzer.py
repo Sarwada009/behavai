@@ -41,14 +41,16 @@ def _get_recognizer():
 def get_emotion_multiplier(face_crop_bgr: np.ndarray) -> tuple[float, str]:
     """
     Analyse the face crop and return (multiplier, emotion_label).
-    Falls back to (1.0, 'neutral') if anything goes wrong.
+    Falls back to simple heuristics if hsemotion fails.
     """
     try:
         rec = _get_recognizer()
         if rec is None:
-            return 1.0, "neutral"
+            logger.debug("Emotion recognizer not available, using heuristic fallback")
+            return _detect_emotion_heuristic(face_crop_bgr)
 
-        emotion_label, _scores = rec.predict_emotions(face_crop_bgr, logits=False)
+        emotion_label, scores = rec.predict_emotions(face_crop_bgr, logits=False)
+        logger.debug("Emotion detected: %s (scores: %s)", emotion_label, scores)
 
         if emotion_label in _EMOTION_LABELS:
             idx = _EMOTION_LABELS.index(emotion_label)
@@ -56,6 +58,35 @@ def get_emotion_multiplier(face_crop_bgr: np.ndarray) -> tuple[float, str]:
 
         return 1.0, emotion_label
 
-    except Exception:
-        logger.exception("Emotion detection error")
+    except Exception as e:
+        logger.warning("Emotion detection error: %s. Using heuristic fallback.", str(e))
+        return _detect_emotion_heuristic(face_crop_bgr)
+
+
+def _detect_emotion_heuristic(face_crop_bgr: np.ndarray) -> tuple[float, str]:
+    """
+    Simple heuristic emotion detection using mouth/smile detection.
+    Returns (multiplier, emotion_label).
+    """
+    try:
+        import cv2
+
+        # Try to detect smile using cascade classifier
+        smile_cascade = cv2.CascadeClassifier(
+            cv2.data.haarcascades + 'haarcascade_smile.xml'
+        )
+
+        if smile_cascade.empty():
+            return 1.0, "neutral"
+
+        gray = cv2.cvtColor(face_crop_bgr, cv2.COLOR_BGR2GRAY)
+        smiles = smile_cascade.detectMultiScale(gray, scaleFactor=1.8, minNeighbors=20, minSize=(25, 25))
+
+        if len(smiles) > 0:
+            logger.debug("Smile detected via cascade classifier")
+            return 0.3, "happiness"
+
+        return 1.0, "neutral"
+    except Exception as e:
+        logger.debug("Heuristic emotion detection failed: %s", str(e))
         return 1.0, "neutral"
