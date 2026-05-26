@@ -94,6 +94,47 @@ export function WebcamMonitor() {
   useEffect(() => () => stopCamera(), [stopCamera]);
 
   const isAlert = result?.alert_type != null;
+  const [lastAlertTime, setLastAlertTime] = React.useState(0);
+
+  // Vibrate and beep on alert
+  React.useEffect(() => {
+    if (!isAlert || !result) return;
+    const now = Date.now();
+    if (now - lastAlertTime < 2000) return; // Throttle to once per 2 seconds
+
+    setLastAlertTime(now);
+
+    // Vibration pattern: [vibrate ms, pause ms, vibrate ms, ...]
+    const pattern = result.alert_type === "outburst"
+      ? [200, 100, 200, 100, 200] // Outburst: 3 strong vibrations
+      : [100, 50, 100]; // Warning: 2 vibrations
+
+    if (navigator.vibrate) {
+      navigator.vibrate(pattern);
+    }
+
+    // Play alert sound
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const frequency = result.alert_type === "outburst" ? 800 : 600;
+      const duration = 0.3;
+
+      const osc = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      osc.connect(gain);
+      gain.connect(audioContext.destination);
+
+      osc.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+
+      osc.start(audioContext.currentTime);
+      osc.stop(audioContext.currentTime + duration);
+    } catch (e) {
+      // Audio context may not be available on some devices
+    }
+  }, [isAlert, result, lastAlertTime]);
 
   return (
     <div style={styles.card}>
