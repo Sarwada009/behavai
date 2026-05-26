@@ -6,7 +6,6 @@ import { API_BASE } from "../api/client";
 import { patientsApi, PatientSummary } from "../api/patients";
 import { AlertPanel } from "../components/AlertPanel";
 import { usePresenceStore } from "../store/presenceStore";
-import { useAuthStore } from "../store/authStore";
 
 function scoreColor(score: number): string {
   if (score >= 80) return "#c62828";
@@ -182,9 +181,6 @@ function PatientTile({ patient, onEdit }: { patient: PatientSummary; onEdit: () 
   const photoUri = patient.photo_url ? `${API_BASE}${patient.photo_url}` : null;
   const score    = usePresenceStore((s) => s.scores[patient.id]);
   const qc = useQueryClient();
-  const user = useAuthStore((s) => s.user);
-  const canEdit = user?.role === "admin" || user?.role === "clinician";
-  const canDelete = user?.role === "admin";
   const [deleteError, setDeleteError] = useState("");
   const deleteMutation = useMutation({
     mutationFn: () => client.delete(`/patients/${patient.id}`),
@@ -245,25 +241,21 @@ function PatientTile({ patient, onEdit }: { patient: PatientSummary; onEdit: () 
           </div>
         )}
       </Link>
-      {canEdit && (
-        <button
-          onClick={onEdit}
-          style={styles.editBtn}
-          title="Edit patient"
-        >
-          ✎
-        </button>
-      )}
-      {canDelete && (
-        <button
-          onClick={handleDelete}
-          disabled={deleteMutation.isPending}
-          style={{...styles.deleteBtn, opacity: deleteMutation.isPending ? 0.6 : 1}}
-          title="Delete patient"
-        >
-          {deleteMutation.isPending ? "…" : "✕"}
-        </button>
-      )}
+      <button
+        onClick={onEdit}
+        style={styles.editBtn}
+        title="Edit patient"
+      >
+        ✎
+      </button>
+      <button
+        onClick={handleDelete}
+        disabled={deleteMutation.isPending}
+        style={{...styles.deleteBtn, opacity: deleteMutation.isPending ? 0.6 : 1}}
+        title="Delete patient"
+      >
+        {deleteMutation.isPending ? "…" : "✕"}
+      </button>
     </div>
   );
 }
