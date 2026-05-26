@@ -1,6 +1,7 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import client from "../api/client";
 import { API_BASE } from "../api/client";
 import { patientsApi, PatientSummary } from "../api/patients";
 import { AlertPanel } from "../components/AlertPanel";
@@ -113,42 +114,66 @@ export function PatientsPage() {
 function PatientTile({ patient }: { patient: PatientSummary }) {
   const photoUri = patient.photo_url ? `${API_BASE}${patient.photo_url}` : null;
   const score    = usePresenceStore((s) => s.scores[patient.id]);
+  const qc = useQueryClient();
+  const deleteMutation = useMutation({
+    mutationFn: () => client.delete(`/patients/${patient.id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["patients"] });
+    },
+  });
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (confirm(`Delete patient "${patient.name}"? This cannot be undone.`)) {
+      deleteMutation.mutate();
+    }
+  };
 
   return (
-    <Link to={`/patients/${patient.id}`} style={styles.tile}>
-      <div style={{ position: "relative" }}>
-        {photoUri ? (
-          <img src={photoUri} alt="" style={styles.avatar} />
-        ) : (
-          <div style={styles.avatarPlaceholder}>
-            <span style={styles.avatarInitial}>{patient.name[0]}</span>
+    <div style={{ position: "relative" }}>
+      <Link to={`/patients/${patient.id}`} style={styles.tile}>
+        <div style={{ position: "relative" }}>
+          {photoUri ? (
+            <img src={photoUri} alt="" style={styles.avatar} />
+          ) : (
+            <div style={styles.avatarPlaceholder}>
+              <span style={styles.avatarInitial}>{patient.name[0]}</span>
+            </div>
+          )}
+        </div>
+        <div style={styles.tileInfo}>
+          <span style={styles.tileName}>{patient.name}</span>
+          <span style={styles.tileRoom}>Room {patient.room_number}</span>
+          {patient.diagnosis && (
+            <span style={styles.tileDiag}>{patient.diagnosis}</span>
+          )}
+          {score != null && (
+            <span style={{ fontSize: 12, fontWeight: 700, color: scoreColor(score), marginTop: 4 }}>
+              Score {score}/100
+            </span>
+          )}
+        </div>
+        {score != null && (
+          <div style={{
+            width: 36, height: 36, borderRadius: 18,
+            border: `3px solid ${scoreColor(score)}`,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            marginLeft: 4, flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 12, fontWeight: 800, color: scoreColor(score) }}>{score}</span>
           </div>
         )}
-      </div>
-      <div style={styles.tileInfo}>
-        <span style={styles.tileName}>{patient.name}</span>
-        <span style={styles.tileRoom}>Room {patient.room_number}</span>
-        {patient.diagnosis && (
-          <span style={styles.tileDiag}>{patient.diagnosis}</span>
-        )}
-        {score != null && (
-          <span style={{ fontSize: 12, fontWeight: 700, color: scoreColor(score), marginTop: 4 }}>
-            Score {score}/100
-          </span>
-        )}
-      </div>
-      {score != null && (
-        <div style={{
-          width: 36, height: 36, borderRadius: 18,
-          border: `3px solid ${scoreColor(score)}`,
-          display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          marginLeft: 4, flexShrink: 0,
-        }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: scoreColor(score) }}>{score}</span>
-        </div>
-      )}
-    </Link>
+      </Link>
+      <button
+        onClick={handleDelete}
+        disabled={deleteMutation.isPending}
+        style={styles.deleteBtn}
+        title="Delete patient"
+      >
+        ✕
+      </button>
+    </div>
   );
 }
 
@@ -197,6 +222,14 @@ const styles: Record<string, React.CSSProperties> = {
     marginLeft: "auto", background: "#4A90D9", color: "#fff", border: "none",
     borderRadius: 8, padding: "8px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer",
   },
+  deleteBtn: {
+    position: "absolute", top: 8, right: 8,
+    width: 28, height: 28, borderRadius: 14,
+    background: "#e53935", color: "#fff", border: "none",
+    fontSize: 16, fontWeight: 700, cursor: "pointer",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    zIndex: 10,
+  } as React.CSSProperties,
 };
 
 const modal: Record<string, React.CSSProperties> = {
