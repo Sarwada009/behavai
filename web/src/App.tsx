@@ -7,6 +7,7 @@ import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { CamerasPage } from "./pages/CamerasPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { PatientDetailPage } from "./pages/PatientDetailPage";
 import { PatientsPage } from "./pages/PatientsPage";
 
@@ -85,6 +86,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/" element={<AuthGuard><Layout><DashboardPage /></Layout></AuthGuard>} />
       <Route path="/patients" element={<AuthGuard><Layout><PatientsPage /></Layout></AuthGuard>} />
       <Route path="/patients/:id" element={<AuthGuard><Layout><PatientDetailPage /></Layout></AuthGuard>} />

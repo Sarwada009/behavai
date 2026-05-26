@@ -2,12 +2,14 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 
-export function LoginPage() {
+export function RegisterPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("nurse");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const login = useAuthStore((s) => s.login);
+  const register = useAuthStore((s) => s.register);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -15,10 +17,10 @@ export function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await login(email, password);
+      await register(name, email, password, role);
       navigate("/");
-    } catch {
-      setError("Invalid email or password.");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -32,6 +34,17 @@ export function LoginPage() {
 
         {error && <p style={styles.error}>{error}</p>}
 
+        <label style={styles.label}>Full Name</label>
+        <input
+          style={styles.input}
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          autoFocus
+          placeholder="John Doe"
+        />
+
         <label style={styles.label}>Email</label>
         <input
           style={styles.input}
@@ -39,7 +52,7 @@ export function LoginPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          autoFocus
+          placeholder="user@example.com"
         />
 
         <label style={styles.label}>Password</label>
@@ -49,14 +62,26 @@ export function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          placeholder="Enter a strong password"
         />
 
+        <label style={styles.label}>Role</label>
+        <select
+          style={styles.input}
+          value={role}
+          onChange={(e) => setRole(e.target.value)}
+        >
+          <option value="nurse">Nurse</option>
+          <option value="clinician">Clinician</option>
+          <option value="admin">Admin</option>
+        </select>
+
         <button style={styles.btn} type="submit" disabled={loading}>
-          {loading ? "Signing in…" : "Sign In"}
+          {loading ? "Creating account…" : "Sign Up"}
         </button>
 
         <p style={styles.footer}>
-          Don't have an account? <Link to="/register" style={styles.link}>Sign Up</Link>
+          Already have an account? <Link to="/login" style={styles.link}>Sign In</Link>
         </p>
       </form>
     </div>
@@ -107,7 +132,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 13,
     color: "#666",
     marginTop: 16,
-    textAlign: "center" as const,
+    textAlign: "center",
   },
   link: {
     color: "#4A90D9",

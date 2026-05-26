@@ -11,6 +11,7 @@ interface User {
 interface AuthState {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role: string) => Promise<void>;
   logout: () => void;
   hydrate: () => Promise<void>;
 }
@@ -20,6 +21,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     const { data } = await client.post("/auth/login", { email, password });
+    localStorage.setItem("access_token", data.access_token);
+    set({ user: data.user });
+  },
+
+  register: async (name, email, password, role) => {
+    const { data } = await client.post("/auth/register", { name, email, password, role });
     localStorage.setItem("access_token", data.access_token);
     set({ user: data.user });
   },
