@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.base import BaseHTTPMiddleware
+from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
@@ -31,7 +32,6 @@ class CORSMiddleware(BaseHTTPMiddleware):
         response.headers["Access-Control-Allow-Headers"] = "*"
         return response
 
-from fastapi.responses import Response
 app.add_middleware(CORSMiddleware)
 
 os.makedirs(settings.upload_dir, exist_ok=True)
