@@ -1,7 +1,6 @@
 """
 Face embedding generation and matching using InsightFace (buffalo_sc model).
-
-Replaces deepface/TensorFlow with a much lighter ONNX-based model (~30 MB).
+Falls back to OpenCV Haar Cascade if InsightFace fails to load.
 
 generate_embedding()         — call when a patient photo is uploaded
 generate_embedding_from_frame() — call per camera frame
@@ -20,10 +19,28 @@ MATCH_THRESHOLD = 0.65  # cosine distance — lower is stricter (increased to be
 
 # InsightFace app is heavy to initialise; create it once and reuse
 _face_app = None
+_use_insightface = True
+_cascade_classifier = None
+
+
+def _get_cascade_classifier():
+    """Load OpenCV Haar Cascade classifier as fallback."""
+    global _cascade_classifier
+    if _cascade_classifier is None:
+        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        _cascade_classifier = cv2.CascadeClassifier(cascade_path)
+        if _cascade_classifier.empty():
+            logger.warning("Failed to load Haar Cascade classifier")
+            return None
+        logger.info("Haar Cascade classifier loaded as fallback")
+    return _cascade_classifier
 
 
 def _get_face_app():
-    global _face_app
+    global _face_app, _use_insightface
+    if not _use_insightface:
+        return None
+
     if _face_app is None:
         try:
             from insightface.app import FaceAnalysis
@@ -33,8 +50,10 @@ def _get_face_app():
             )
             _face_app.prepare(ctx_id=0, det_size=(320, 320))
             logger.info("InsightFace model loaded")
-        except Exception:
-            logger.exception("Failed to load InsightFace model")
+        except Exception as e:
+            logger.warning("Failed to load InsightFace model: %s. Using Haar Cascade fallback.", str(e))
+            _use_insightface = False
+            _face_app = None
     return _face_app
 
 
@@ -48,13 +67,19 @@ def _cosine_distance(a: list[float], b: list[float]) -> float:
 
 
 def generate_embedding(image_path: str) -> Optional[list[float]]:
-    """Generate a face embedding from a patient photo file path."""
+    """Generate a face embedding from a patient photo file path.
+    Returns None if no face detected (will use Haar Cascade fallback in stream).
+    """
     try:
         img = cv2.imread(image_path)
         if img is None:
             logger.warning("Could not read image: %s", image_path)
             return None
-        return _embed_frame(img)
+        # Try to generate embedding - if it fails, return None and let stream use Haar Cascade
+        data = get_face_data(img)
+        if data and data.get("embedding"):
+            return data["embedding"]
+        return None
     except Exception:
         logger.exception("Error generating embedding for %s", image_path)
         return None
@@ -70,19 +95,36 @@ def get_face_data(frame_bgr: np.ndarray) -> Optional[dict]:
     """
     Returns {"embedding": [...], "bbox": [x1, y1, x2, y2]} for the
     largest detected face, or None if no face found.
+    Falls back to Haar Cascade if InsightFace is unavailable.
     """
     try:
         app = _get_face_app()
-        if app is None:
-            return None
-        faces = app.get(frame_bgr)
-        if not faces:
-            return None
-        largest = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
-        return {
-            "embedding": largest.embedding.tolist(),
-            "bbox": largest.bbox.tolist(),   # [x1, y1, x2, y2]
-        }
+        if app is not None:
+            # Use InsightFace
+            faces = app.get(frame_bgr)
+            if not faces:
+                return None
+            largest = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
+            return {
+                "embedding": largest.embedding.tolist(),
+                "bbox": largest.bbox.tolist(),   # [x1, y1, x2, y2]
+            }
+        else:
+            # Fallback to Haar Cascade
+            cascade = _get_cascade_classifier()
+            if cascade is None:
+                return None
+            gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+            faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+            if len(faces) == 0:
+                return None
+            # Get largest face
+            largest = max(faces, key=lambda f: f[2] * f[3])
+            x, y, w, h = largest
+            return {
+                "embedding": None,  # Haar Cascade doesn't provide embeddings
+                "bbox": [x, y, x + w, y + h],
+            }
     except Exception:
         logger.exception("Error in get_face_data")
         return None
