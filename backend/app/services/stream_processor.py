@@ -25,7 +25,7 @@ import cv2
 import numpy as np
 
 from app.services.behavior_analyzer import BehaviorAnalyzer
-from app.services.face_service import find_match, generate_embedding_from_frame
+from app.services.face_service import find_match, generate_embedding_from_frame, get_face_data
 
 logger = logging.getLogger(__name__)
 
@@ -105,30 +105,35 @@ class StreamWorker(threading.Thread):
     def _process_frame(self, frame: np.ndarray):
         ts = datetime.now(timezone.utc).isoformat()
 
-        # 1. Face recognition
+        # 1. Face detection and recognition
         patient_id   = None
         patient_name = None
         confidence   = 0.0
 
-        face_embedding = generate_embedding_from_frame(frame)
-        if face_embedding:
-            candidates = self.get_candidates()
-            match = find_match(face_embedding, candidates)
-            if match:
-                patient_id, confidence = match
-                patient_name = next(
-                    (c["patient_name"] for c in candidates if c["patient_id"] == patient_id),
-                    "Unknown",
-                )
-                self._emit({
-                    "type":         "presence",
-                    "patient_id":   patient_id,
-                    "patient_name": patient_name,
-                    "camera_id":    self.camera_id,
-                    "room_number":  self.room_number,
-                    "confidence":   confidence,
-                    "timestamp":    ts,
-                })
+        # Get face data (bbox + optional embedding)
+        face_data = get_face_data(frame)
+        if face_data:
+            face_embedding = face_data.get("embedding")
+
+            # Try to match if we have an embedding
+            if face_embedding:
+                candidates = self.get_candidates()
+                match = find_match(face_embedding, candidates)
+                if match:
+                    patient_id, confidence = match
+                    patient_name = next(
+                        (c["patient_name"] for c in candidates if c["patient_id"] == patient_id),
+                        "Unknown",
+                    )
+                    self._emit({
+                        "type":         "presence",
+                        "patient_id":   patient_id,
+                        "patient_name": patient_name,
+                        "camera_id":    self.camera_id,
+                        "room_number":  self.room_number,
+                        "confidence":   confidence,
+                        "timestamp":    ts,
+                    })
 
         # 2. Fallback: attribute behaviour to the room's assigned patient
         if patient_id is None:
