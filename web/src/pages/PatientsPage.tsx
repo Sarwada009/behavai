@@ -115,15 +115,22 @@ function PatientTile({ patient }: { patient: PatientSummary }) {
   const photoUri = patient.photo_url ? `${API_BASE}${patient.photo_url}` : null;
   const score    = usePresenceStore((s) => s.scores[patient.id]);
   const qc = useQueryClient();
+  const [deleteError, setDeleteError] = useState("");
   const deleteMutation = useMutation({
     mutationFn: () => client.delete(`/patients/${patient.id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["patients"] });
     },
+    onError: (error: any) => {
+      const msg = error.response?.data?.detail || error.message || "Failed to delete patient";
+      setDeleteError(msg);
+      console.error("Delete failed:", error);
+    },
   });
 
   const handleDelete = (e: React.MouseEvent) => {
     e.preventDefault();
+    setDeleteError("");
     if (confirm(`Delete patient "${patient.name}"? This cannot be undone.`)) {
       deleteMutation.mutate();
     }
@@ -152,6 +159,9 @@ function PatientTile({ patient }: { patient: PatientSummary }) {
               Score {score}/100
             </span>
           )}
+          {deleteError && (
+            <span style={{ fontSize: 11, color: "#e53935", marginTop: 4 }}>{deleteError}</span>
+          )}
         </div>
         {score != null && (
           <div style={{
@@ -168,10 +178,10 @@ function PatientTile({ patient }: { patient: PatientSummary }) {
       <button
         onClick={handleDelete}
         disabled={deleteMutation.isPending}
-        style={styles.deleteBtn}
+        style={{...styles.deleteBtn, opacity: deleteMutation.isPending ? 0.6 : 1}}
         title="Delete patient"
       >
-        ✕
+        {deleteMutation.isPending ? "…" : "✕"}
       </button>
     </div>
   );
