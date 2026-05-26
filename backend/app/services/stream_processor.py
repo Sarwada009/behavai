@@ -25,6 +25,7 @@ import cv2
 import numpy as np
 
 from app.services.behavior_analyzer import BehaviorAnalyzer
+from app.services.emotion_analyzer import get_emotion_multiplier
 from app.services.face_service import find_match, generate_embedding_from_frame, get_face_data
 
 logger = logging.getLogger(__name__)
@@ -142,7 +143,22 @@ class StreamWorker(threading.Thread):
                 patient_id   = room_patient["patient_id"]
                 patient_name = room_patient["patient_name"]
 
-        # 3. Behaviour / pose analysis
+        # 3. Emotion analysis (if face detected)
+        emotion = "neutral"
+        if face_data and face_data.get("bbox"):
+            try:
+                x1, y1, x2, y2 = face_data["bbox"]
+                # Ensure bbox is within frame bounds
+                h, w = frame.shape[:2]
+                x1, y1 = max(0, int(x1)), max(0, int(y1))
+                x2, y2 = min(w, int(x2)), min(h, int(y2))
+                if x2 > x1 and y2 > y1:
+                    face_crop = frame[y1:y2, x1:x2]
+                    _, emotion = get_emotion_multiplier(face_crop)
+            except Exception:
+                emotion = "neutral"
+
+        # 4. Behaviour / pose analysis
         if patient_id and self._analyzer:
             score = self._analyzer.analyze(frame)
             if score is not None:
@@ -153,6 +169,7 @@ class StreamWorker(threading.Thread):
                     "camera_id":     self.camera_id,
                     "room_number":   self.room_number,
                     "agitation_score": round(score, 1),
+                    "emotion":       emotion,
                     "timestamp":     ts,
                 })
 
