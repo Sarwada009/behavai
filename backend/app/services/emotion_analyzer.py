@@ -1,11 +1,11 @@
 """
-Emotion detection using Hugging Face Vision Transformer.
-Uses pre-trained model fine-tuned on facial emotions.
+Emotion detection using DeepFace.
+Pre-trained deep neural network for accurate facial emotion recognition.
 
 Emotion multipliers applied to the motion score:
-  Anger / Contempt / Fear / Disgust → 1.2x  (concerning emotions)
-  Neutral / Sad                      → 1.0x  (no change)
-  Happy / Surprise                   → 0.3x  (suppresses alert)
+  Angry / Fear / Disgust → 1.2x  (concerning emotions)
+  Sad / Neutral           → 1.0x  (no change)
+  Happy / Surprise        → 0.3x  (suppresses alert)
 """
 
 import logging
@@ -13,8 +13,6 @@ from typing import Optional
 
 import cv2
 import numpy as np
-from PIL import Image
-from transformers import pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -28,39 +26,19 @@ _EMOTION_MULTIPLIERS = {
     "happy": 0.3,
 }
 
-# Load model once at startup
-_emotion_pipeline = None
+_DEEPFACE_AVAILABLE = False
 
-
-def _get_pipeline():
-    """Lazy-load emotion detection pipeline."""
-    global _emotion_pipeline
-    if _emotion_pipeline is None:
-        try:
-            _emotion_pipeline = pipeline(
-                "image-classification",
-                model="nateraw/vit-base-patch16-224-in21k_finetuned_emotions",
-                device=0 if _has_cuda() else -1,
-            )
-            logger.info("Emotion detection model loaded successfully")
-        except Exception as e:
-            logger.warning("Failed to load emotion model: %s", str(e))
-            _emotion_pipeline = False
-    return _emotion_pipeline if _emotion_pipeline else None
-
-
-def _has_cuda():
-    """Check if CUDA is available."""
-    try:
-        import torch
-        return torch.cuda.is_available()
-    except Exception:
-        return False
+try:
+    from deepface import DeepFace
+    _DEEPFACE_AVAILABLE = True
+    logger.info("DeepFace loaded successfully for emotion detection")
+except Exception as e:
+    logger.warning("DeepFace unavailable: %s", str(e))
 
 
 def get_emotion_multiplier(frame_bgr: np.ndarray) -> tuple[float, str]:
     """
-    Detect emotion from face crop using Vision Transformer.
+    Detect emotion from face using DeepFace.
     Returns (multiplier, emotion_label).
     """
     try:
@@ -75,30 +53,33 @@ def get_emotion_multiplier(frame_bgr: np.ndarray) -> tuple[float, str]:
 
 def _detect_emotion(frame_bgr: np.ndarray) -> str:
     """
-    Detect emotion using Hugging Face Vision Transformer.
+    Detect emotion using DeepFace.
     """
-    pipeline = _get_pipeline()
-    if not pipeline:
-        logger.warning("Emotion pipeline unavailable, using neutral")
+    if not _DEEPFACE_AVAILABLE:
+        logger.warning("DeepFace unavailable, using neutral")
         return "Neutral"
 
     try:
-        # Convert BGR to RGB for PIL
-        frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        pil_image = Image.fromarray(frame_rgb)
+        # DeepFace expects BGR format (which we have)
+        # analyze returns a list of dicts with emotion probabilities
+        results = DeepFace.analyze(
+            frame_bgr,
+            actions=["emotion"],
+            enforce_detection=False,  # Don't fail if face not detected
+            silent=True,
+        )
 
-        # Run inference
-        results = pipeline(pil_image)
-
-        # results is a list of dicts: [{"label": "happy", "score": 0.95}, ...]
-        # Pick the highest confidence emotion
-        if results:
-            top_emotion = results[0]["label"]
-            # Capitalize for consistency with multipliers
-            return top_emotion.capitalize()
+        if results and len(results) > 0:
+            # Get the first face's emotions
+            emotions = results[0].get("emotion", {})
+            if emotions:
+                # Pick the emotion with highest confidence
+                top_emotion = max(emotions, key=emotions.get)
+                logger.debug(f"Emotions detected: {emotions}, top: {top_emotion}")
+                return top_emotion.capitalize()
 
         return "Neutral"
 
     except Exception as e:
-        logger.error("Emotion inference failed: %s", str(e))
+        logger.error("DeepFace inference failed: %s", str(e))
         return "Neutral"
