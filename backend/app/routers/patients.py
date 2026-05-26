@@ -87,19 +87,13 @@ async def create_patient(
         if photo.content_type not in ("image/jpeg", "image/png", "image/webp"):
             raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
 
-        os.makedirs(settings.upload_dir, exist_ok=True)
-        ext = photo.filename.rsplit(".", 1)[-1]
-        filename = f"{patient.id}.{ext}"
-        dest = os.path.join(settings.upload_dir, filename)
-
-        async with aiofiles.open(dest, "wb") as out:
-            await out.write(await photo.read())
-
-        patient.photo_url = f"/uploads/{filename}"
+        photo_bytes = await photo.read()
+        patient.photo_data = photo_bytes
+        patient.photo_url = f"/api/patients/{patient.id}/photo"
         db.commit()
         db.refresh(patient)
 
-        background_tasks.add_task(_regenerate_embedding, str(patient.id), dest)
+        background_tasks.add_task(_regenerate_embedding, str(patient.id), photo_bytes)
 
     return patient
 
@@ -161,43 +155,64 @@ async def upload_photo(
     if file.content_type not in ("image/jpeg", "image/png", "image/webp"):
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
 
-    os.makedirs(settings.upload_dir, exist_ok=True)
-    ext = file.filename.rsplit(".", 1)[-1]
-    filename = f"{patient_id}.{ext}"
-    dest = os.path.join(settings.upload_dir, filename)
-
-    async with aiofiles.open(dest, "wb") as out:
-        await out.write(await file.read())
-
-    patient.photo_url = f"/uploads/{filename}"
+    photo_bytes = await file.read()
+    patient.photo_data = photo_bytes
+    patient.photo_url = f"/api/patients/{patient_id}/photo"
     db.commit()
     db.refresh(patient)
 
     # Generate face embedding in background so the response returns immediately
-    background_tasks.add_task(_regenerate_embedding, str(patient_id), dest)
+    background_tasks.add_task(_regenerate_embedding, str(patient_id), photo_bytes)
 
     return patient
 
 
-def _regenerate_embedding(patient_id: str, image_path: str):
+@router.get("/{patient_id}/photo")
+def get_patient_photo(
+    patient_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Retrieve patient photo as binary image data."""
+    from fastapi.responses import Response
+
+    patient = db.get(Patient, patient_id)
+    if not patient or not patient.photo_data:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    return Response(content=patient.photo_data, media_type="image/jpeg")
+
+
+def _regenerate_embedding(patient_id: str, photo_data: bytes):
     """Blocking task: generate embedding and persist it."""
     from app.database import SessionLocal
+    import cv2
+    import numpy as np
 
-    embedding = generate_embedding(image_path)
-    if embedding is None:
-        logger.warning("No face detected in uploaded photo for patient %s", patient_id)
-        return
-
-    db: Session = SessionLocal()
     try:
-        import uuid as _uuid
-        patient = db.get(Patient, _uuid.UUID(patient_id))
-        if patient:
-            patient.face_embedding = embedding
-            db.commit()
-            logger.info("Face embedding stored for patient %s", patient_id)
-    except Exception:
-        logger.exception("Failed to store embedding for patient %s", patient_id)
-        db.rollback()
-    finally:
-        db.close()
+        nparr = np.frombuffer(photo_data, np.uint8)
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if image is None:
+            logger.warning("Failed to decode image for patient %s", patient_id)
+            return
+
+        embedding = generate_embedding(image)
+        if embedding is None:
+            logger.warning("No face detected in uploaded photo for patient %s", patient_id)
+            return
+
+        db: Session = SessionLocal()
+        try:
+            import uuid as _uuid
+            patient = db.get(Patient, _uuid.UUID(patient_id))
+            if patient:
+                patient.face_embedding = embedding
+                db.commit()
+                logger.info("Face embedding stored for patient %s", patient_id)
+        except Exception:
+            logger.exception("Failed to store embedding for patient %s", patient_id)
+            db.rollback()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.exception("Error processing photo for patient %s: %s", patient_id, str(e))

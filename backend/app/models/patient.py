@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, JSON, String, Text, func
+from sqlalchemy import Date, DateTime, ForeignKey, JSON, LargeBinary, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,6 +16,7 @@ class Patient(Base):
     date_of_birth: Mapped[date] = mapped_column(Date)
     room_number: Mapped[str] = mapped_column(String(20))
     photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    photo_data: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
     diagnosis: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Stored as JSON arrays, e.g. ["loud noises", "strangers"]
     known_triggers: Mapped[list] = mapped_column(JSON, default=list)
