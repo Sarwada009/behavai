@@ -311,8 +311,9 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#4A90D9", color: "#fff", border: "none",
     fontSize: 14, fontWeight: 700, cursor: "pointer",
     display: "flex", alignItems: "center", justifyContent: "center",
-    zIndex: 10,
-    transition: "opacity 0.2s",
+    zIndex: 11,
+    transition: "all 0.2s",
+    padding: 0,
   } as React.CSSProperties,
   deleteBtn: {
     position: "absolute", top: 8, right: 8,
