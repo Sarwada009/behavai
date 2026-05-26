@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 # Try to load emotion detection, but make it optional
 try:
-    from app.services.emotion_analyzer_custom import get_emotion_multiplier
+    from app.services.emotion_analyzer import get_emotion_multiplier
     EMOTION_DETECTION_AVAILABLE = True
 except Exception as e:
     logger.warning("Emotion detection unavailable: %s", str(e))
