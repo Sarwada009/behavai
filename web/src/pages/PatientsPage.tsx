@@ -74,6 +74,69 @@ function AddPatientModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function EditPatientModal({ patient, onClose }: { patient: PatientSummary; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [form, setForm] = useState({
+    name: patient.name,
+    room_number: patient.room_number,
+    diagnosis: patient.diagnosis || "",
+    medications: "",
+    triggers: "",
+    care_notes: patient.care_notes || ""
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name || !form.room_number) { setError("Name and room number are required."); return; }
+    setSaving(true);
+    try {
+      const payload: Record<string, any> = {};
+      if (form.name !== patient.name) payload.name = form.name;
+      if (form.room_number !== patient.room_number) payload.room_number = form.room_number;
+      if (form.diagnosis !== (patient.diagnosis || "")) payload.diagnosis = form.diagnosis || null;
+      if (form.care_notes !== (patient.care_notes || "")) payload.care_notes = form.care_notes || null;
+      if (form.medications) payload.medications = form.medications;
+      if (form.triggers) payload.triggers = form.triggers;
+
+      await client.patch(`/patients/${patient.id}`, payload);
+      qc.invalidateQueries({ queryKey: ["patients"] });
+      onClose();
+    } catch {
+      setError("Failed to update patient.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={modal.overlay}>
+      <form onSubmit={handleSubmit} style={modal.card}>
+        <h3 style={{ margin: "0 0 16px" }}>Edit Patient</h3>
+        {error && <p style={{ color: "#e53935", marginBottom: 12 }}>{error}</p>}
+        {(["name", "room_number", "diagnosis", "medications", "triggers"] as const).map((k) => (
+          <div key={k} style={{ marginBottom: 12 }}>
+            <label style={modal.label}>{k.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase())}</label>
+            <input style={modal.input} value={(form as any)[k]} onChange={set(k)} />
+          </div>
+        ))}
+        <div style={{ marginBottom: 12 }}>
+          <label style={modal.label}>Care Notes</label>
+          <textarea style={{ ...modal.input, height: 64, resize: "none" }} value={form.care_notes} onChange={set("care_notes")} />
+        </div>
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <button type="button" onClick={onClose} style={modal.cancelBtn}>Cancel</button>
+          <button type="submit" disabled={saving} style={modal.saveBtn}>{saving ? "Saving…" : "Update"}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function PatientsPage() {
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
@@ -82,10 +145,13 @@ export function PatientsPage() {
     queryFn: () => patientsApi.list(search || undefined),
   });
 
+  const [editingPatient, setEditingPatient] = useState<PatientSummary | null>(null);
+
   return (
     <div style={styles.page}>
       <AlertPanel />
       {showAdd && <AddPatientModal onClose={() => setShowAdd(false)} />}
+      {editingPatient && <EditPatientModal patient={editingPatient} onClose={() => setEditingPatient(null)} />}
       <div style={styles.header}>
         <h2 style={styles.title}>Patients</h2>
         <input
@@ -102,7 +168,7 @@ export function PatientsPage() {
       ) : (
         <div style={styles.grid}>
           {data.map((p) => (
-            <PatientTile key={p.id} patient={p} />
+            <PatientTile key={p.id} patient={p} onEdit={() => setEditingPatient(p)} />
           ))}
           {data.length === 0 && <p style={{ color: "#aaa" }}>No patients found.</p>}
         </div>
@@ -111,7 +177,7 @@ export function PatientsPage() {
   );
 }
 
-function PatientTile({ patient }: { patient: PatientSummary }) {
+function PatientTile({ patient, onEdit }: { patient: PatientSummary; onEdit: () => void }) {
   const photoUri = patient.photo_url ? `${API_BASE}${patient.photo_url}` : null;
   const score    = usePresenceStore((s) => s.scores[patient.id]);
   const qc = useQueryClient();
@@ -176,6 +242,13 @@ function PatientTile({ patient }: { patient: PatientSummary }) {
         )}
       </Link>
       <button
+        onClick={onEdit}
+        style={styles.editBtn}
+        title="Edit patient"
+      >
+        ✎
+      </button>
+      <button
         onClick={handleDelete}
         disabled={deleteMutation.isPending}
         style={{...styles.deleteBtn, opacity: deleteMutation.isPending ? 0.6 : 1}}
@@ -232,6 +305,14 @@ const styles: Record<string, React.CSSProperties> = {
     marginLeft: "auto", background: "#4A90D9", color: "#fff", border: "none",
     borderRadius: 8, padding: "8px 18px", fontSize: 14, fontWeight: 700, cursor: "pointer",
   },
+  editBtn: {
+    position: "absolute", top: 8, right: 40,
+    width: 28, height: 28, borderRadius: 14,
+    background: "#4A90D9", color: "#fff", border: "none",
+    fontSize: 14, fontWeight: 700, cursor: "pointer",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    zIndex: 10,
+  } as React.CSSProperties,
   deleteBtn: {
     position: "absolute", top: 8, right: 8,
     width: 28, height: 28, borderRadius: 14,
