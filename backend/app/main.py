@@ -12,7 +12,7 @@ from app.services.ws_manager import ws_manager as websocket_manager
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="CareWatch API", version="2.0.0")
+app = FastAPI(title="CareWatch API", version="2.1.0")
 
 app.add_middleware(
     CORSMiddleware,
