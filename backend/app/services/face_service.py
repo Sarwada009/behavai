@@ -16,7 +16,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-MATCH_THRESHOLD = 0.55  # cosine distance — lower is stricter
+MATCH_THRESHOLD = 0.65  # cosine distance — lower is stricter (increased to be more forgiving)
 
 # InsightFace app is heavy to initialise; create it once and reuse
 _face_app = None
