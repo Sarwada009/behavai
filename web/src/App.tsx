@@ -10,6 +10,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { PatientDetailPage } from "./pages/PatientDetailPage";
 import { PatientsPage } from "./pages/PatientsPage";
+import { TestEmotionPage } from "./pages/TestEmotionPage";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
@@ -92,6 +93,7 @@ function AppRoutes() {
       <Route path="/patients/:id" element={<AuthGuard><Layout><PatientDetailPage /></Layout></AuthGuard>} />
       <Route path="/analytics" element={<AuthGuard><Layout><AnalyticsPage /></Layout></AuthGuard>} />
       <Route path="/cameras" element={<AuthGuard><Layout><CamerasPage /></Layout></AuthGuard>} />
+      <Route path="/test-emotion" element={<AuthGuard><Layout><TestEmotionPage /></Layout></AuthGuard>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
