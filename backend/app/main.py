@@ -16,7 +16,11 @@ app = FastAPI(title="CareWatch API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Tighten to specific origins in production
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "https://behavai.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
