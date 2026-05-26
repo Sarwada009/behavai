@@ -88,7 +88,6 @@ async def create_patient(
             raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
 
         photo_bytes = await photo.read()
-        patient.photo_data = photo_bytes
         patient.photo_url = f"/api/patients/{patient.id}/photo"
         db.commit()
         db.refresh(patient)
@@ -156,7 +155,6 @@ async def upload_photo(
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
 
     photo_bytes = await file.read()
-    patient.photo_data = photo_bytes
     patient.photo_url = f"/api/patients/{patient_id}/photo"
     db.commit()
     db.refresh(patient)
@@ -174,13 +172,7 @@ def get_patient_photo(
     _: User = Depends(get_current_user),
 ):
     """Retrieve patient photo as binary image data."""
-    from fastapi.responses import Response
-
-    patient = db.get(Patient, patient_id)
-    if not patient or not patient.photo_data:
-        raise HTTPException(status_code=404, detail="Photo not found")
-
-    return Response(content=patient.photo_data, media_type="image/jpeg")
+    raise HTTPException(status_code=404, detail="Photo storage temporarily disabled")
 
 
 def _regenerate_embedding(patient_id: str, photo_data: bytes):
