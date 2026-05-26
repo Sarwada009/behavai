@@ -47,7 +47,7 @@ async def create_patient(
     care_notes: str | None = Form(None),
     photo: UploadFile | None = File(None),
     db: Session = Depends(get_db),
-    _: User = Depends(require_role("admin", "clinician")),
+    _: User = Depends(get_current_user),
 ):
     dob = date.today()
     if date_of_birth:
@@ -115,7 +115,7 @@ def update_patient(
     patient_id: uuid.UUID,
     payload: PatientUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_role("admin", "clinician")),
+    _: User = Depends(get_current_user),
 ):
     patient = db.get(Patient, patient_id)
     if not patient:
@@ -146,7 +146,7 @@ async def upload_photo(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    _: User = Depends(require_role("admin", "clinician")),
+    _: User = Depends(get_current_user),
 ):
     patient = db.get(Patient, patient_id)
     if not patient:
