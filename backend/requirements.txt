@@ -14,16 +14,13 @@ pillow==11.0.0
 aiofiles==23.2.1
 
 # Phase 2: Computer Vision & ML
-numpy==1.24.3
-scipy==1.11.4
 opencv-python-headless==4.8.1.78
 insightface==0.7.3
 onnxruntime>=1.17.0
+numpy==1.24.3
+scipy==1.11.4
 
 # Phase 3: Emotion & Behavior Detection
-deepface==0.0.75
-# Ensure headless OpenCV is used (override any opencv-python from deepface)
-opencv-python-headless==4.8.1.78
 httpx==0.27.0
 
 # Phase 4: Reports

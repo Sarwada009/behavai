@@ -2,7 +2,7 @@
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (including graphics libraries for OpenCV)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libssl-dev \
@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender-dev \
     libgl1-mesa-glx \
+    libglib2.0-0 \
+    libdbus-1-3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
