@@ -71,12 +71,19 @@ def generate_embedding(image_data) -> Optional[list[float]]:
     Returns None if no face detected (will use Haar Cascade fallback in stream).
     """
     try:
+        logger.info(f"generate_embedding called with type: {type(image_data)}")
+
         # Handle both file paths and binary data
-        if isinstance(image_data, bytes):
+        if isinstance(image_data, (bytes, bytearray)):
+            logger.info(f"Processing as bytes/bytearray, size: {len(image_data)}")
             nparr = np.frombuffer(image_data, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        else:
+        elif isinstance(image_data, str):
+            logger.info(f"Processing as file path: {image_data}")
             img = cv2.imread(image_data)
+        else:
+            logger.error(f"Unexpected image_data type: {type(image_data)}")
+            return None
 
         if img is None:
             logger.warning("Could not read image")
@@ -84,6 +91,7 @@ def generate_embedding(image_data) -> Optional[list[float]]:
         # Try to generate embedding - if it fails, return None and let stream use Haar Cascade
         data = get_face_data(img)
         if data and data.get("embedding"):
+            logger.info(f"Embedding generated successfully")
             return data["embedding"]
         return None
     except Exception:
