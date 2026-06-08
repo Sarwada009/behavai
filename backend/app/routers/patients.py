@@ -49,6 +49,7 @@ async def create_patient(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    logger.info(f"create_patient called with photo: {photo}, filename: {photo.filename if photo else 'None'}")
     dob = date.today()
     if date_of_birth:
         try:
