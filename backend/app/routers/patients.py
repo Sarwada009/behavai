@@ -81,36 +81,38 @@ async def create_patient(
         care_notes=care_notes or None,
     )
 
-    # Process photo if provided
-    photo_bytes = None
-    if photo and photo.filename:
-        logger.info(f"Processing photo: {photo.filename}, content_type: {photo.content_type}")
-        if photo.content_type not in ("image/jpeg", "image/png", "image/webp"):
-            raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
-        try:
-            photo_bytes = await photo.read()
-            logger.info(f"Photo bytes read: {len(photo_bytes)} bytes")
-            patient.photo_data = photo_bytes
-            patient.photo_content_type = photo.content_type
-            logger.info(f"Photo data set on patient object")
-        except Exception as e:
-            logger.error(f"Error processing photo: {e}", exc_info=True)
-            raise
-
-    # Save patient and photo in single transaction
+    # Save patient first to get ID
     db.add(patient)
-    logger.info(f"Patient added to session, has photo_data: {patient.photo_data is not None}")
     db.commit()
-    logger.info(f"Patient committed with ID: {patient.id}, photo_data bytes: {len(patient.photo_data) if patient.photo_data else 0}")
     db.refresh(patient)
 
-    # Set photo_url after patient has ID
-    if photo_bytes:
-        patient.photo_url = f"/api/patients/{patient.id}/photo"
-        logger.info(f"Setting photo_url: {patient.photo_url}")
+    # Process photo if provided (after patient has ID)
+    if photo and photo.filename:
+        if photo.content_type not in ("image/jpeg", "image/png", "image/webp"):
+            raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
+
+        photo_bytes = await photo.read()
+
+        # Save photo to disk
+        import os
+        upload_dir = settings.upload_dir
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # Generate filename
+        photo_filename = f"{patient.id}.jpg"
+        photo_path = os.path.join(upload_dir, photo_filename)
+
+        # Write file to disk
+        with open(photo_path, "wb") as f:
+            f.write(photo_bytes)
+
+        # Update patient with filename and URL
+        patient.photo_filename = photo_filename
+        patient.photo_url = f"/uploads/{photo_filename}"
         db.commit()
         db.refresh(patient)
-        logger.info(f"Patient updated with photo_url")
+
+        # Generate face embedding
         background_tasks.add_task(_regenerate_embedding, str(patient.id), photo_bytes)
 
     return patient
@@ -174,9 +176,23 @@ async def upload_photo(
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
 
     photo_bytes = await file.read()
-    patient.photo_data = photo_bytes
-    patient.photo_content_type = file.content_type
-    patient.photo_url = f"/api/patients/{patient_id}/photo"
+
+    # Save photo to disk
+    import os
+    upload_dir = settings.upload_dir
+    os.makedirs(upload_dir, exist_ok=True)
+
+    # Generate filename
+    photo_filename = f"{patient_id}.jpg"
+    photo_path = os.path.join(upload_dir, photo_filename)
+
+    # Write file to disk
+    with open(photo_path, "wb") as f:
+        f.write(photo_bytes)
+
+    # Update patient with filename and URL
+    patient.photo_filename = photo_filename
+    patient.photo_url = f"/uploads/{photo_filename}"
     db.commit()
     db.refresh(patient)
 
@@ -186,44 +202,6 @@ async def upload_photo(
     return patient
 
 
-@router.get("/{patient_id}/photo-debug")
-def debug_photo(
-    patient_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
-):
-    """Debug endpoint to check if photo_data exists."""
-    patient = db.query(Patient).filter(Patient.id == patient_id).first()
-    return {
-        "patient_found": patient is not None,
-        "has_photo_data": patient.photo_data is not None if patient else False,
-        "photo_size": len(patient.photo_data) if patient and patient.photo_data else 0,
-        "patient_id": str(patient_id)
-    }
-
-
-@router.get("/{patient_id}/photo")
-async def get_patient_photo(
-    patient_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
-):
-    """Retrieve patient photo as binary image data."""
-    from fastapi.responses import Response
-    from sqlalchemy import text
-
-    # Cast string UUID to UUID type for proper comparison
-    result = db.execute(
-        text("SELECT photo_data, photo_content_type FROM patients WHERE id = CAST(:id AS UUID)"),
-        {"id": str(patient_id)}
-    ).first()
-
-    if result and result[0]:
-        photo_data, photo_content_type = result
-        media_type = photo_content_type or "image/jpeg"
-        return Response(content=photo_data, media_type=media_type)
-
-    raise HTTPException(status_code=404, detail="Photo not found")
 
 
 def _regenerate_embedding(patient_id: str, photo_data: bytes):
