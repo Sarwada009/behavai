@@ -89,6 +89,7 @@ async def create_patient(
 
         photo_bytes = await photo.read()
         patient.photo_data = photo_bytes
+        patient.photo_content_type = photo.content_type
         patient.photo_url = f"/api/patients/{patient.id}/photo"
         db.commit()
         db.refresh(patient)
@@ -157,6 +158,7 @@ async def upload_photo(
 
     photo_bytes = await file.read()
     patient.photo_data = photo_bytes
+    patient.photo_content_type = file.content_type
     patient.photo_url = f"/api/patients/{patient_id}/photo"
     db.commit()
     db.refresh(patient)
@@ -180,7 +182,8 @@ def get_patient_photo(
     if not patient or not patient.photo_data:
         raise HTTPException(status_code=404, detail="Photo not found")
 
-    return Response(content=patient.photo_data, media_type="image/jpeg")
+    media_type = patient.photo_content_type or "image/jpeg"
+    return Response(content=patient.photo_data, media_type=media_type)
 
 
 def _regenerate_embedding(patient_id: str, photo_data: bytes):
