@@ -67,20 +67,19 @@ def _cosine_distance(a: list[float], b: list[float]) -> float:
 
 
 def generate_embedding(image_data) -> Optional[list[float]]:
-    """Generate a face embedding from image data (bytes or file path).
+    """Generate a face embedding from image data (bytes, file path, or numpy array).
     Returns None if no face detected (will use Haar Cascade fallback in stream).
     """
     try:
-        logger.info(f"generate_embedding called with type: {type(image_data)}")
-
-        # Handle both file paths and binary data
+        # Handle bytes, file paths, or numpy arrays
         if isinstance(image_data, (bytes, bytearray)):
-            logger.info(f"Processing as bytes/bytearray, size: {len(image_data)}")
             nparr = np.frombuffer(image_data, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         elif isinstance(image_data, str):
-            logger.info(f"Processing as file path: {image_data}")
             img = cv2.imread(image_data)
+        elif isinstance(image_data, np.ndarray):
+            # Already decoded image
+            img = image_data
         else:
             logger.error(f"Unexpected image_data type: {type(image_data)}")
             return None
@@ -91,7 +90,6 @@ def generate_embedding(image_data) -> Optional[list[float]]:
         # Try to generate embedding - if it fails, return None and let stream use Haar Cascade
         data = get_face_data(img)
         if data and data.get("embedding"):
-            logger.info(f"Embedding generated successfully")
             return data["embedding"]
         return None
     except Exception:
