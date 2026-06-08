@@ -195,15 +195,15 @@ def get_patient_photo(
     """Retrieve patient photo as binary image data."""
     from fastapi.responses import Response
 
-    logger.info(f"get_patient_photo called for patient_id: {patient_id}")
-    patient = db.get(Patient, patient_id)
-    logger.info(f"Patient found: {patient is not None}, has photo_data: {patient.photo_data is not None if patient else False}")
+    # Query patient directly instead of using db.get()
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
 
-    if not patient or not patient.photo_data:
-        logger.warning(f"Photo not found for patient {patient_id}")
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    if not patient.photo_data:
         raise HTTPException(status_code=404, detail="Photo not found")
 
-    logger.info(f"Returning photo with size: {len(patient.photo_data)} bytes")
     media_type = patient.photo_content_type or "image/jpeg"
     return Response(content=patient.photo_data, media_type=media_type)
 
