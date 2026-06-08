@@ -212,8 +212,9 @@ async def get_patient_photo(
     from fastapi.responses import Response
     from sqlalchemy import text
 
+    # Cast string UUID to UUID type for proper comparison
     result = db.execute(
-        text("SELECT photo_data, photo_content_type FROM patients WHERE id = :id"),
+        text("SELECT photo_data, photo_content_type FROM patients WHERE id = CAST(:id AS UUID)"),
         {"id": str(patient_id)}
     ).first()
 
