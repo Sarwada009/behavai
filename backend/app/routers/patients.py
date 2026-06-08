@@ -88,9 +88,12 @@ async def create_patient(
             raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
 
         photo_bytes = await photo.read()
+        patient.photo_data = photo_bytes
         patient.photo_url = f"/api/patients/{patient.id}/photo"
         db.commit()
         db.refresh(patient)
+
+        background_tasks.add_task(_regenerate_embedding, str(patient.id), photo_bytes)
 
     return patient
 
@@ -153,9 +156,13 @@ async def upload_photo(
         raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
 
     photo_bytes = await file.read()
+    patient.photo_data = photo_bytes
     patient.photo_url = f"/api/patients/{patient_id}/photo"
     db.commit()
     db.refresh(patient)
+
+    # Generate face embedding in background so the response returns immediately
+    background_tasks.add_task(_regenerate_embedding, str(patient_id), photo_bytes)
 
     return patient
 
