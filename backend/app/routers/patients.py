@@ -203,7 +203,7 @@ def debug_photo(
 
 
 @router.get("/{patient_id}/photo")
-def get_patient_photo(
+async def get_patient_photo(
     patient_id: uuid.UUID,
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
@@ -212,25 +212,17 @@ def get_patient_photo(
     from fastapi.responses import Response
     from sqlalchemy import text
 
-    # Test with a simple 1x1 pixel PNG
-    test_png = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82'
+    result = db.execute(
+        text("SELECT photo_data, photo_content_type FROM patients WHERE id = :id"),
+        {"id": str(patient_id)}
+    ).first()
 
-    # Try to get actual photo from database
-    try:
-        result = db.execute(
-            text("SELECT photo_data, photo_content_type FROM patients WHERE id = :id"),
-            {"id": str(patient_id)}
-        ).first()
+    if result and result[0]:
+        photo_data, photo_content_type = result
+        media_type = photo_content_type or "image/jpeg"
+        return Response(content=photo_data, media_type=media_type)
 
-        if result and result[0]:
-            photo_data, photo_content_type = result
-            media_type = photo_content_type or "image/jpeg"
-            return Response(content=photo_data, media_type=media_type)
-    except Exception as e:
-        logger.error(f"Error retrieving photo: {e}")
-
-    # Fallback to test image
-    return Response(content=test_png, media_type="image/png")
+    raise HTTPException(status_code=404, detail="Photo not found")
 
 
 def _regenerate_embedding(patient_id: str, photo_data: bytes):
