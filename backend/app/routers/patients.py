@@ -186,6 +186,22 @@ async def upload_photo(
     return patient
 
 
+@router.get("/{patient_id}/photo-debug")
+def debug_photo(
+    patient_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Debug endpoint to check if photo_data exists."""
+    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    return {
+        "patient_found": patient is not None,
+        "has_photo_data": patient.photo_data is not None if patient else False,
+        "photo_size": len(patient.photo_data) if patient and patient.photo_data else 0,
+        "patient_id": str(patient_id)
+    }
+
+
 @router.get("/{patient_id}/photo")
 def get_patient_photo(
     patient_id: uuid.UUID,
@@ -195,7 +211,6 @@ def get_patient_photo(
     """Retrieve patient photo as binary image data."""
     from fastapi.responses import Response
 
-    # Query patient directly instead of using db.get()
     patient = db.query(Patient).filter(Patient.id == patient_id).first()
 
     if not patient:
