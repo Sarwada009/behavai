@@ -210,17 +210,20 @@ def get_patient_photo(
 ):
     """Retrieve patient photo as binary image data."""
     from fastapi.responses import Response
+    from sqlalchemy import text
 
-    patient = db.query(Patient).filter(Patient.id == patient_id).first()
+    # Use raw SQL to ensure photo_data is loaded correctly
+    result = db.execute(
+        text("SELECT photo_data, photo_content_type FROM patients WHERE id = :id"),
+        {"id": str(patient_id)}
+    ).first()
 
-    if not patient:
-        raise HTTPException(status_code=404, detail="Patient not found")
-
-    if not patient.photo_data:
+    if not result or not result[0]:
         raise HTTPException(status_code=404, detail="Photo not found")
 
-    media_type = patient.photo_content_type or "image/jpeg"
-    return Response(content=patient.photo_data, media_type=media_type)
+    photo_data, photo_content_type = result
+    media_type = photo_content_type or "image/jpeg"
+    return Response(content=photo_data, media_type=media_type)
 
 
 def _regenerate_embedding(patient_id: str, photo_data: bytes):
