@@ -79,21 +79,26 @@ async def create_patient(
         medications=meds,
         care_notes=care_notes or None,
     )
+
+    # Process photo if provided
+    photo_bytes = None
+    if photo and photo.filename:
+        if photo.content_type not in ("image/jpeg", "image/png", "image/webp"):
+            raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
+        photo_bytes = await photo.read()
+        patient.photo_data = photo_bytes
+        patient.photo_content_type = photo.content_type
+
+    # Save patient and photo in single transaction
     db.add(patient)
     db.commit()
     db.refresh(patient)
 
-    if photo and photo.filename:
-        if photo.content_type not in ("image/jpeg", "image/png", "image/webp"):
-            raise HTTPException(status_code=400, detail="Only JPEG, PNG, or WebP images are accepted")
-
-        photo_bytes = await photo.read()
-        patient.photo_data = photo_bytes
-        patient.photo_content_type = photo.content_type
+    # Set photo_url after patient has ID
+    if photo_bytes:
         patient.photo_url = f"/api/patients/{patient.id}/photo"
         db.commit()
         db.refresh(patient)
-
         background_tasks.add_task(_regenerate_embedding, str(patient.id), photo_bytes)
 
     return patient
