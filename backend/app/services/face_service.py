@@ -127,7 +127,8 @@ def get_face_data(frame_bgr: np.ndarray) -> Optional[dict]:
             if cascade is None:
                 return None
             gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
-            faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+            # Less strict detection: lower minNeighbors and scaleFactor for better face detection
+            faces = cascade.detectMultiScale(gray, scaleFactor=1.05, minNeighbors=3, minSize=(20, 20))
             if len(faces) == 0:
                 return None
             # Get largest face
