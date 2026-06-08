@@ -48,7 +48,7 @@ def _get_face_app():
                 name="buffalo_sc",                      # small model ~30 MB
                 providers=["CPUExecutionProvider"],     # no GPU needed
             )
-            _face_app.prepare(ctx_id=0, det_size=(320, 320))
+            _face_app.prepare(ctx_id=0, det_size=(160, 160))
             logger.info("InsightFace model loaded")
         except Exception as e:
             logger.warning("Failed to load InsightFace model: %s. Using Haar Cascade fallback.", str(e))

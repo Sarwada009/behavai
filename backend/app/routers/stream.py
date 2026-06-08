@@ -39,9 +39,9 @@ logger = logging.getLogger(__name__)
 def _fallback_emotion(frame):
     return (1.0, "Neutral")
 
-# Try to load emotion detection
+# Try to load emotion detection (using custom trained model)
 try:
-    from app.services.emotion_analyzer import get_emotion_multiplier
+    from app.services.emotion_analyzer_custom import get_emotion_multiplier
 except:
     get_emotion_multiplier = _fallback_emotion
 router = APIRouter(prefix="/stream", tags=["stream"])
@@ -139,6 +139,12 @@ def _process_sync(raw_bytes: bytes, user_id: str, db: Session) -> FrameResult:
             confidence=0, agitation_score=None, alert_type=None,
             face_detected=False, emotion=None, emotion_multiplier=1.0,
         )
+
+    # Resize frame for faster processing (reduces CPU load by 4x)
+    h, w = frame.shape[:2]
+    if w > 480:
+        scale = 480 / w
+        frame = cv2.resize(frame, (int(w * scale), int(h * scale)))
 
     patient_id:   Optional[str] = None
     patient_name: Optional[str] = None
